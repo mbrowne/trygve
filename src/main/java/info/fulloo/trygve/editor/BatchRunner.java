@@ -3,6 +3,8 @@ package info.fulloo.trygve.editor;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.File;
+import java.lang.SecurityException;
 import java.io.InputStreamReader;
 
 import info.fulloo.trygve.error.ErrorLogger;
@@ -73,6 +75,29 @@ public class BatchRunner {
 	    }
 	    return stringBuilder.toString();
 	}
+	private String loadDirectory() {
+		String sourceCode = "";
+		try {
+			final File dir = new File(dirName_);
+			if (!dir.isDirectory()) {
+				System.err.format(dirName_ + " is not a directory.\n");
+				return "";
+			}
+			for (final File file: dir.listFiles()) {
+				if (file.isDirectory()) {
+					//TODO should we support recursively iterating subdirectories?
+				}
+				else {
+					fileName_ = dirName_ + File.separator + file.getName();
+					sourceCode += loadFile();
+				}
+			}
+		}
+		catch (SecurityException se) {
+			System.err.format("Can't open directory `%s': " + se.getMessage() + "\n");
+		}
+	    return sourceCode;
+	}
 	private void processArgs(final String[] args) {
 		runFlag_ = false;
 		for (int i = 0; i < args.length; i++) {
@@ -86,10 +111,19 @@ public class BatchRunner {
 					final String program = loadFile();
 					programText_ = programText_ + program;
 				}
+			} else if (arg.startsWith("-d")) {
+				// -d = compile directory. compile all files in the given directory
+				if (arg.length() > 2) {
+					dirName_ = arg.substring(2, arg.length()-1);
+				} else {
+					dirName_ = arg = args[++i];
+					final String program = loadDirectory();
+					programText_ = programText_ + program;
+				}
 			} else if (arg.equals("-r") || arg.equals("-run")) {
 				runFlag_ = true;
 			} else {
-				System.err.format("Usage: -c filename.k [-c otherFilename.k] ... [-r]\n");
+				System.err.format("Usage: -c filename.k [-c otherFilename.k] [-d sourceDirectory] ... [-r]\n");
 			}
 		}
 	}
@@ -98,5 +132,6 @@ public class BatchRunner {
 	RunTimeEnvironment virtualMachine_;
 	boolean compiledWithoutError_, runFlag_;
 	String fileName_;
+	String dirName_;
 	String programText_;
 }
