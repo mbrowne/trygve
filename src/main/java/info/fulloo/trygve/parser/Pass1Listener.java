@@ -4311,7 +4311,7 @@ public class Pass1Listener extends Pass0Listener {
 			final ObjectDeclaration objDecl = (ObjectDeclaration)variablesToInitialize_.objectAtIndex(j);
 			      Type expressionType = initializationExpression.type();
 			final Type declarationType = objDecl.type();
-
+			
 			if (null != declarationType && null != expressionType &&
 					declarationType.canBeConvertedFrom(expressionType)) {
 				
@@ -4354,14 +4354,18 @@ public class Pass1Listener extends Pass0Listener {
 						this.nameCheck(tokAsText, lineNumber);
 						objDecl = this.pass1InitialDeclarationCheck(tokAsText, lineNumber);
 						if (null == objDecl) {
-							objDecl = new ObjectDeclaration(tokAsText, type, lineNumber);
+							objDecl = new ObjectDeclaration(tokAsText, type, lineNumber);							
 							declareObjectSuitableToPass(currentScope_, objDecl);
 							objDecl.setAccess(accessQualifier, currentScope_, lineNumber);
 						} else {
 							// Doesn't hurt to update type
 							objDecl.updateType(type);
+							// Uninitialized properties default to null
+							if (!parsingData_.currentExpressionExists()) {
+								updateInitializationLists(new NullExpression(), objDecl);
+							}
 						}
-					}
+					}					
 				} else {
 					for (int i = 0; i < tnpt.getChildCount(); i++) {
 						final ParseTree pt2 = tnpt.getChild(i);
@@ -4396,6 +4400,7 @@ public class Pass1Listener extends Pass0Listener {
 					final Expression initializationExpr = parsingData_.popExpression();
 					assert initializationExpr != null;
 					assert objDecl != null;
+					
 					updateInitializationLists(initializationExpr, objDecl);
 				}
 			} else {
